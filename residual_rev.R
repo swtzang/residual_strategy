@@ -497,7 +497,7 @@ p = p + geom_text(data = label.dat, aes(x = Index, y= Value, label = Series),
   theme(legend.text = element_text(colour="black", size = 9, face = "bold")) +
   geom_hline(yintercept=c(1,10),colour="#990000", linetype="dashed")
 p
-path_p = paste("~/residual reversal/output/", "10Q_equity_cap", sep="")
+path_p = paste("~/residual_strategy/output/", "10Q_equity_cap", sep="")
 ExportPlot(p, path_p)
 #-----------------------------------------------------------------------
 Q1_Q10.ret.cap<-merge.xts(models.cap[[1]][3]$ret,models.cap[[10]]$ret)
@@ -641,7 +641,7 @@ ExportPlot(gp, path_gp) # run ExportPlot() function first!
 #  plotbt(models, plotX = T, log = 'y', LeftMargin = 3)            
 #  mtext('Cumulative Performance', side = 2, line = 1)
 pbt = plotbt.strategy.sidebyside(models.tw, return.table = TRUE)
-path_risk = paste("~/residual reversal/output/", "risk_equity.csv", sep="")
+path_risk = paste("~/residual_strategy/output/", "risk_equity.csv", sep="")
 write.csv(pbt, path_risk)
 #============================
 # output graph in pdf
@@ -743,7 +743,7 @@ my.xtable<-xtable(x = ret.stats.df,
                   digits = 4)
 
 print(my.xtable, include.rownames = TRUE,
-      file = '~/residual reversal/output/tables/table1_return_stats.tex',
+      file = '~/residual_strategy/output/table1_return_stats.tex',
       type = 'latex')
 
 #-----------------------------------------------------------------------------------------
@@ -837,7 +837,7 @@ my.xtable<-xtable(x = ret.stats.cap.df,
                   digits = 4)
 
 print(my.xtable, include.rownames = TRUE,
-      file = '~/residual reversal/output/tables/table2_ret_stats_cap.tex',
+      file = '~/residual_strategy/output/table2_ret_stats_cap.tex',
       type = 'latex')
 
 ###################################################################
