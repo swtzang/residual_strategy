@@ -16,6 +16,7 @@ close(con)
 #****************************************************************** 
 load.packages('quantmod') 
 require("PerformanceAnalytics")
+library(stargazer)
 library(lubridate)
 library(reshape2)
 library(psych)
@@ -54,7 +55,7 @@ load.packages('RColorBrewer')
 # TEJ下載之資料要先另存為UTF-8才能讀入
 #===========================================================================
 #setwd("~/residual reversal")
-m.price = read.table("~/residual_reversal/data/TWSE_1990_2017_m_close1.TXT")
+m.price = read.table("~/residual_strategy/data/TWSE_1990_2017_m_close1.TXT")
 m.price<-m.price[,-2]
 colnames(m.price)<-c("id", "date", "close")
 # use dcast to reorder dataframe by date;
@@ -76,7 +77,7 @@ dim(mprice.reorder.xts)
 # import mkt capitalizaton
 # TEJ choose listed stocks without TDR and F-stocks
 #=====================================================
-m.cap = read.table("~/residual_reversal/data/TWSE_1990_2017_m_cap.txt", fileEncoding = 'UTF-8')
+m.cap = read.table("~/residual_strategy/data/TWSE_1990_2017_m_cap.txt", fileEncoding = 'UTF-8')
 m.cap<-m.cap[,-2]
 colnames(m.cap)<-c("id", "date", "cap")
 # use dcast to reorder dataframe by date;
@@ -107,7 +108,7 @@ str(mcap.reorder.xts)
 # code in TEJ: Y9999:所有上市公司
 #====================================================
 # ff6f.tw = read.table("D:/data/FF6F_1990_2017_m.txt", stringsAsFactors = FALSE)
-ff4f.tw = read.table("~/residual_reversal/data/FF4F_1990_2017_m.txt", stringsAsFactors = FALSE, fileEncoding = 'UTF-8')
+ff4f.tw = read.table("~/residual_strategy/data/FF4F_1990_2017_m.txt", stringsAsFactors = FALSE, fileEncoding = 'UTF-8')
 colnames(ff4f.tw)<-c("id", "name","yearmonth", "rmf", "size", "bm", "mom", "rf")
 ff4f.tw <-ff4f.tw[-1,]
 ff4f.tw = ff4f.tw[,c(-1,-2)]
@@ -133,7 +134,7 @@ head(ff4f.tw.xts)
 # ff3.tw = read.csv("D:/亞洲大學碩士班指導論文/雅萍香玫/香玫/ff3factor.csv", header=TRUE)
 #===========================================================================================
 # import stock index
-twse = read.table("~/residual_reversal/data/TWSE_index_1990_2017_m_close.txt", fileEncoding = 'UTF-8')
+twse = read.table("~/residual_strategy/data/TWSE_index_1990_2017_m_close.txt", fileEncoding = 'UTF-8')
 twse = twse[-1, c(-1, -2, -3)]
 colnames(twse)<-c("index", "ret", "logret")
 twse[]<-lapply(twse, function(x) as.numeric(as.character(x)))
@@ -634,7 +635,7 @@ gp= ggplot(data.pg, aes(x=Index, y=Value, group = Series)) +
   theme(legend.justification=c(0,0), legend.position=c(0,0.5))+
   theme(legend.text = element_text(colour="blue", size = 9, face = "bold")) +
   geom_hline(yintercept=c(1,10),colour="#990000", linetype="dashed")
-path_gp = paste("~/residual reversal/output/", "10Q_equity", sep="")
+path_gp = paste("~/residual_strategy/output/", "10Q_equity", sep="")
 ExportPlot(gp, path_gp) # run ExportPlot() function first!
 # export statistics table
 #models.m = rev(models.tw[[m]]) #reverse the order to be Q10, Q9, ..., Q1.
@@ -1173,7 +1174,7 @@ my.xtable<-xtable(x = res.stats.df,
                   digits = 4)
 
 print(my.xtable, include.rownames = TRUE,
-      file = '~/residual reversal/output/tables/table1_res_stats_equalw.tex',
+      file = '~/residual_strategy/output/table1_res_stats_equalw.tex',
       #file = '~/residual reversal/output/tables/table1_res_stats_capw.tex',
       type = 'latex')
 
@@ -1260,7 +1261,7 @@ my.xtable<-xtable(x = res.cap.stats.df,
                   digits = 4)
 
 print(my.xtable, include.rownames = TRUE,
-      file = '~/residual reversal/output/tables/table2_res_stats_capw.tex',
+      file = '~/residual_strategy/output/table2_res_stats_capw.tex',
       type = 'latex')
 
 #--------------------------------------------------------------------------
@@ -1281,7 +1282,7 @@ gg20<- ggplot(ret_res_equal.long, aes(x=Index, y=Value, group = Series)) +
           portfolios based on equal weighting")+
   xlab("year") + ylab("value")
 
-path_gg20 = paste("~/residual reversal/output/", "ret_res_equal", sep="")
+path_gg20 = paste("~/residual_strategy/output/", "ret_res_equal", sep="")
 ExportPlot(gg20, path_gg20)
 #------------------------------------------------------------------------------
 # Plot multiple months by year for conventional return reversal vs. residual reversal
@@ -1309,13 +1310,14 @@ gg21<-ggplot(ret_res_equal.ret.long, aes(x=Month, y=Value, group = Series)) +
 #----------------------------------------------------------------------------
 tmp.xts = ret_res_equal.ret
 tmp.xts$date = index(ret_res_equal.ret)
-tmp.xts$year = year(tmp.df$date)
-tmp.xts$month = month(tmp.df$date)
+tmp.xts$year = year(tmp.xts$date)
+tmp.xts$month = month(tmp.xts$date)
 tmp.xts
 #
 i=1993
 mean.out<-NULL
 sharperatio<-NULL
+
 for (i in seq(1993, 2017)){
   tmpi<-tmp.xts[tmp.xts$year==i, 1:2]
   meani = apply(tmpi, 2, mean)
@@ -1385,7 +1387,8 @@ gg1<-ggplot(cf.ret.cap.q1.long, aes(x=Index, y=Value, group = Series, color = Se
   ggtitle(title)+
   #  geom_point(aes(shape=Series))+
   xlab("year") + ylab("coefficients")
-path_gg1 = paste("~/residual reversal/output/", "cf_ret_cap_q1", sep="")
+gg1
+path_gg1 = paste("~/residual_strategy/output/", "cf_ret_cap_q1", sep="")
 ExportPlot(gg1, path_gg1)
 #-------------------------------------------------------------
 #計算Table 1 panel A run rolling regression by eq(15)
@@ -1455,6 +1458,7 @@ est.parm.df
 #------------------------------------------------------------------
 est.parm.eq<-matrix(data = NA, nrow=30, ncol =8)
 # i=1
+eq15.ls = list()
 for (i in 1:10){
   ret.qi<-quantiles.tw$one.month$models[[i]]$ret 
   ret.qi.ret.factors<-merge(ret.qi, data.fa.tw$factors[,-4])['199302/201712']
@@ -1462,7 +1466,8 @@ for (i in 1:10){
   #head(ret.q1.ret.factors_up)
   # run EQ(15) regression
   eq15.ret.qi<-lm(X1101 ~ mkp+SML+HML+mkp_up+SML_up+HML_up, data=as.data.frame(ret.qi.ret.factors_up))
-  #summary(eq15.ret.q1)
+  eq15.ls[[i]]<-eq15.ret.qi
+   #summary(eq15.ret.q1)
   # create regression results in tables using huxreg()
   #huxreg(eq15.ret.q1)
   # Newey West standard errors correction for serial correlation
@@ -1488,6 +1493,13 @@ for (i in 1:10){
   est.parm.eq[3*(i-1)+3, 1:7]<-nw.t.out[,4]
 }
 
+stargazer(eq15.ls, flip=TRUE)
+# stargazer(eq15.ls, type="text", 
+#           dep.var.labels=c("Q1","Q2","Q3","Q4","Q5","Q6","Q7","Q8","Q9","Q10"), 
+#           covariate.labels=c("alpha", "RMRF", "SMB", 
+#                              "HML", "RMRF_up", "SMB_up", "HML_up", "Adj-R2"), 
+#           flip = TRUE)
+
 est.parm.eq.df<-as.data.frame(est.parm.eq)
 colnames(est.parm.eq.df)<-c("alpha","mkp", "SML", "HML", "mkp_up", "SML_up", "HML_up", "adjR2")
 #rownames(est.parm.df)<-rep(c("coef", "t-value", "p-value"), 10)
@@ -1497,7 +1509,9 @@ options("scipen"=10, "digits"= 3)
 est.parm.eq.df
 # http://www.tablesgenerator.com/latex_tables
 # we can use latex table generator to generate tables
-#-----------------------------------------------------------------
+#============================================================================
+
+#============================================================================
 # 3 .Repeat the above codings again to compute residual reversal 
 # strategy based on equal weighting
 #------------------------------------------------------------------
