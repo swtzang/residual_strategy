@@ -105,6 +105,7 @@ head(mcap.reorder.xts)
 str(mcap.reorder.xts)
 #====================================================
 # import Fama French 4 factors monthly return series;
+# rmf, size, bm, mom
 # code in TEJ: Y9999:所有上市公司
 #====================================================
 # ff6f.tw = read.table("D:/data/FF6F_1990_2017_m.txt", stringsAsFactors = FALSE)
@@ -254,6 +255,7 @@ tickers.tw == tickers.cap
 
 #*********************************************************************
 # create a equally-weight portfolio based on all listed stocks
+# Benchmark portfolio by market
 #=====================================================================
 models.tw<-list()
 data.tw <- new.env()
@@ -410,10 +412,10 @@ names(models.tw[[1]]) #第一個模型:equal.weight內的成份;
 #[1] "weight"      "type"        "ret"         "best"        "worst"       "equity"     
 #[7] "cagr"        "dates.index"
 
-#第一個模型:equal.weight內的第三個成份:ret
+#第1個模型:equal.weight內的第三個成份:ret
 head(models.tw[[1]]$ret, 40)
 head(models.tw[[1]]$equity, 40)
-#第七個模型:the fifth quantile (M1_Q5) 內的第三個成份:ret
+#第8個模型:the fifth quantile (M1_Q5) 內的第三個成份:ret
 #models.tw[[7]][3]
 models.tw$M1_Q5$ret
 
@@ -485,19 +487,33 @@ head(fig.cap,5)
 str(fig.cap)
 
 #
-title = "Cumulative returns of decile value-weighted portfolios ranked by previous one-month returns"
+title = "Cumulative returns of value-weighted decile portfolios ranked by previous one-month returns"
+subtitle = "Q10 is the largest return portfolio in previous month"
+# scale_shape_manual() reference: 
+# https://stackoverflow.com/questions/16813278/cycling-through-point-shapes-when-more-than-6-factor-levels
+#
 p = ggplot(fig.cap, aes(x = Index, y = Value)) +
-  geom_line(aes(linetype = Series)) +
-  geom_point(aes(shape = Series))+
-  xlab("year") + ylab("cumulative returns")
+    geom_line(aes(linetype = Series)) +
+    scale_shape_manual(values=c(seq(0,8), 15)) +
+    geom_point(aes(shape = Series)) +
+    scale_x_date(limits = as.Date(c(min(fig.cap$Index), max(fig.cap$Index))),
+                   date_labels = "%Y", date_breaks = "3 years") +
+    xlab("year") + ylab("cumulative returns")
+p
+#
 p = p + geom_text(data = label.dat, aes(x = Index, y= Value, label = Series), 
                   hjust = 0.5, size=3, color="black")+
-  ggtitle(title) +
-  theme(plot.title=element_text(face="bold", size=10))+
+  ggtitle(label = title, subtitle = subtitle) +
+  theme(plot.title=element_text(face="bold", size=12))+
   theme(legend.justification=c(0,0), legend.position=c(0,0.5))+
   theme(legend.text = element_text(colour="black", size = 9, face = "bold")) +
   geom_hline(yintercept=c(1,10),colour="#990000", linetype="dashed")
 p
+#path_p = paste("~/residual_strategy/output/", "10Q_equity_cap.pdf", sep="")
+#pdf(file=path_p)
+#p
+#dev.off()
+# Use function ExportPlot()! You have to run this function first!
 path_p = paste("~/residual_strategy/output/", "10Q_equity_cap", sep="")
 ExportPlot(p, path_p)
 #-----------------------------------------------------------------------
@@ -580,11 +596,6 @@ charts.PerformanceSummary(Q1_Q10.ret.cap, geometric=TRUE)
 # # adding in a title string if need be
 
 
-
-
-
-
-
 #============================
 # output graph in pdf
 #============================
@@ -622,11 +633,14 @@ data.pg = fortify(all.equity["1993/2017"], melt = TRUE)
 dim(data.pg)
 head(data.pg)
 label.dat = fortify(tail(all.equity,1), melt=TRUE)
-title = paste("Cumulative returns of 14 portfolios")
+title = paste("Cumulative returns of TWSE and equal-weighted, cap-weighted and Q1-Q10 return decile portfolios")
 #title = paste(title, 'based on quintiles of residual returns')
 gp= ggplot(data.pg, aes(x=Index, y=Value, group = Series)) +
   geom_line(aes(linetype=Series, color = Series)) +
-  geom_point(aes(shape=Series))+
+  scale_shape_manual(values=seq(0, 13)) + 
+  geom_point(aes(shape=Series)) +
+  scale_x_date(limits = as.Date(c(min(data.pg$Index), max(data.pg$Index))),
+               date_labels = "%Y", date_breaks = "3 years") +
   xlab("Index") + ylab("cumulative returns")+
   #scale_x_datetime(breaks = date_breaks("1 year"),labels = date_format("%Y"))+
   geom_text(data = label.dat, aes(x=Index,y=Value, label = Series), hjust = 0.5)+
@@ -635,7 +649,11 @@ gp= ggplot(data.pg, aes(x=Index, y=Value, group = Series)) +
   theme(legend.justification=c(0,0), legend.position=c(0,0.5))+
   theme(legend.text = element_text(colour="blue", size = 9, face = "bold")) +
   geom_hline(yintercept=c(1,10),colour="#990000", linetype="dashed")
+#
+gp
+#  
 path_gp = paste("~/residual_strategy/output/", "10Q_equity", sep="")
+
 ExportPlot(gp, path_gp) # run ExportPlot() function first!
 # export statistics table
 #models.m = rev(models.tw[[m]]) #reverse the order to be Q10, Q9, ..., Q1.
@@ -735,6 +753,10 @@ ret.stats.df = as.data.frame(ret.stats)
 rownames(ret.stats.df)<-names(all.ret)
 colnames(ret.stats.df) = c("mean", "stdev", "skew", "kurtosis",
                            "jb-test", "jb-pvalue","Sharpe ratio", "CAGR", "AvgD", "MaxD")
+#-----------------------------------------------------------------------------------------------------------------------
+# Table 1: Summary statistics for conventional return reversal and residual reversal portfolios based on equal weighting
+# Panel A: Conventional reversal strategy (equal weighting)
+#-----------------------------------------------------------------------------------------------------------------------
 options(digits = 4)
 ret.stats.df
 # write output to latex file
@@ -744,7 +766,7 @@ my.xtable<-xtable(x = ret.stats.df,
                   digits = 4)
 
 print(my.xtable, include.rownames = TRUE,
-      file = '~/residual_strategy/output/table1_return_stats.tex',
+      file = '~/residual_strategy/output/table1_panelA_return_stats.tex',
       type = 'latex')
 
 #-----------------------------------------------------------------------------------------
@@ -822,13 +844,18 @@ for (i in 1:11){
   SR = SharpeRatio.annualized(one.month.ret, Rf = RF.tw/12, scale=12, geometric=FALSE)
   #SR.eq = SharpeRatio.annualized(equal.ret, Rf = RF.tw/12, scale=12, geometric=FALSE)
   ret.stats.cap[i,] = rbind(c(as.numeric(average.ret), as.numeric(stdev.ret), skew, as.numeric(kurtosis), 
-                              jbtest@test$statistic, as.numeric(jbtest@test$p.value), 
+                              as.numeric(jbtest@test$statistic), as.numeric(jbtest@test$p.value), 
                               as.numeric(SR), as.numeric(cagr), avgD, maxD))
 }
 ret.stats.cap
 ret.stats.cap.df = as.data.frame(ret.stats.cap, row.names = colnames(all.ret.cap))
 colnames(ret.stats.cap.df) = c("mean", "stdev", "skew", "kurtosis",
                                "jb-test", "jb-pvalue","Sharpe ratio", "CAGR", "avgD", "maxD")
+
+#------------------------------------------------------------------------------------------------------------------------
+# Table 2: Summary statistics for conventional return reversal and residual reversal portfolios based on value weighting
+# Panel A: Conventional reversal strategy (value weighting)
+#------------------------------------------------------------------------------------------------------------------------
 options(digits = 4)
 ret.stats.cap.df
 # write output to latex file
@@ -838,22 +865,15 @@ my.xtable<-xtable(x = ret.stats.cap.df,
                   digits = 4)
 
 print(my.xtable, include.rownames = TRUE,
-      file = '~/residual_strategy/output/table2_ret_stats_cap.tex',
+      file = '~/residual_strategy/output/table2_panelA_ret_stats_cap.tex',
       type = 'latex')
 
 ###################################################################
 #以上為依報酬率分十組所得之績效結果
 ###################################################################
 #================================================================================================
-
-
-
-
-
-
-
-
-
+# Followings are residual reversal strategy portfolio
+#================================================================================================
 
 #############################################################################
 # function to compute additional custom stats for factor.rolling.regression
@@ -918,7 +938,7 @@ head(temp)
 factors.tw	= list()
 factors.tw$last.e = temp
 factors.tw$last.e_s = temp
-#FF因子分析迴歸估計係數寫出
+#FF factor regression estimated coefficients
 coeff.tw = list()
 coeff.tw$b0 = temp #alpha
 coeff.tw$b1 = temp #market
@@ -1164,6 +1184,12 @@ res.stats
 res.stats.df = as.data.frame(res.stats, row.names = names(all.ret)[-1:-3])
 colnames(res.stats.df) = c("mean", "stdev", "skew", "kurtosis",
                            "jb-test", "jb-pvalue","Sharpe ratio", "CAGR", "avgD", "maxD")
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Table 1: Summary statistics for conventional return reversal and residual reversal portfolios based on equal weighting
+# Panel B: Residual reversal strategy (equal weighting)
+#-----------------------------------------------------------------------------------------------------------------------
 options(digits = 4)
 res.stats.df
 # write output to latex file
@@ -1252,6 +1278,11 @@ res.cap.stats
 res.cap.stats.df = as.data.frame(res.cap.stats, row.names = names(all.ret)[-1:-3])
 colnames(res.cap.stats.df) = c("mean", "stdev", "skew", "kurtosis",
                                "jb-test", "jb-pvalue","Sharpe ratio", "CAGR", "avgD", "maxD")
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Table 2: Summary statistics for conventional return reversal and residual reversal portfolios based on cap weighting
+# Panel B: Residual reversal strategy (cap weighting)
+#-----------------------------------------------------------------------------------------------------------------------
 options(digits = 4)
 res.cap.stats.df
 # write output to latex file
@@ -1265,6 +1296,7 @@ print(my.xtable, include.rownames = TRUE,
       type = 'latex')
 
 #--------------------------------------------------------------------------
+# Fig. 1: Cumulated returns of monthly return loser (retQ1) and residual loser (resQ1)
 # plot equal weighting conventional reversal Q1 vs. residual reversal Q1 
 # accumulative returns
 #--------------------------------------------------------------------------
@@ -1276,12 +1308,16 @@ label.dat1 = fortify(tail(ret_res_equal,1), melt=TRUE)
 ret_res_equal.long<-fortify(ret_res_equal, melt = TRUE)
 #
 gg20<- ggplot(ret_res_equal.long, aes(x=Index, y=Value, group = Series)) +
-  geom_line(aes(linetype=Series))+
-  geom_hline(yintercept=c(1),colour="#990000", linetype="dashed")+
-  ggtitle("Accumulated returns of convential reversal (ret Q1) vs. residual reversal (res Q1)
+       geom_line(aes(linetype=Series)) +
+       scale_x_date(limits = as.Date(c(min(ret_res_equal.long$Index), max(ret_res_equal.long$Index))),
+               date_labels = "%Y", date_breaks = "3 years") + 
+       geom_hline(yintercept=c(1),colour="#990000", linetype="dashed")+
+       ggtitle("Accumulated returns of convential reversal (ret Q1) vs. residual reversal (res Q1)
           portfolios based on equal weighting")+
-  xlab("year") + ylab("value")
-
+       xlab("year") + ylab("value")
+#
+gg20
+#
 path_gg20 = paste("~/residual_strategy/output/", "ret_res_equal", sep="")
 ExportPlot(gg20, path_gg20)
 #------------------------------------------------------------------------------
@@ -1300,6 +1336,13 @@ head(ret_res_equal.ret.long)
 gg21<-ggplot(ret_res_equal.ret.long, aes(x=Month, y=Value, group = Series)) +
   geom_line(aes(linetype=Series)) +
   facet_wrap(~ Year, nc = 3)
+#
+gg21
+
+# Density distribution of ret_Q1 and res_Q1
+ggplot(ret_res_equal.ret.long, aes(Value, color= Series)) +
+    geom_density()
+
 #geom_text(data = label.dat, aes(x = Index, y= Value, label = Series), 
 #          hjust = 0.1, size=3, color= 'black', parse = TRUE)+
 #geom_hline(yintercept=c(1, 0.5, 0),colour="#990000", linetype="dashed")+
@@ -1309,9 +1352,9 @@ gg21<-ggplot(ret_res_equal.ret.long, aes(x=Month, y=Value, group = Series)) +
 # reversal strategy
 #----------------------------------------------------------------------------
 tmp.xts = ret_res_equal.ret
-tmp.xts$date = index(ret_res_equal.ret)
-tmp.xts$year = year(tmp.xts$date)
-tmp.xts$month = month(tmp.xts$date)
+#tmp.xts$date = index(ret_res_equal.ret)
+tmp.xts$year = year(index(tmp.xts))
+tmp.xts$month = month(index(tmp.xts))
 tmp.xts
 #
 i=1993
@@ -1368,7 +1411,7 @@ for (i in 1:10){
 head(cf.ret.cap.qi[[10]], 40)
 tail(cf.ret.cap.qi[[10]], 1)
 par(mfrow=c(1,1))
-plot(na.trim(cf.ret.cap.qi[[1]][, 2:4]), ylim = c(-0.8, 1.5))
+plot(na.trim(cf.ret.cap.qi[[2]][, 2:4]), ylim = c(-0.8, 1.5))
 #
 #colnames(cf.ret.cap.qi[[1]][,2:4])<-c("mkt", "SMB", "HML")
 tmp<-cf.ret.cap.qi[[1]][, 2:4]["1996/2017"]
@@ -1379,19 +1422,23 @@ head(cf.ret.cap.q1.long)
 title = paste("Coefficients of three factor models for conventional 
               value-weighted return portfolios for Q1")
 #
-gg1<-ggplot(cf.ret.cap.q1.long, aes(x=Index, y=Value, group = Series, color = Series)) +
-  geom_line(aes(linetype=Series)) +
-  geom_text(data = label.dat, aes(x = Index, y= Value, label = Series), 
+gg1<-ggplot(cf.ret.cap.q1.long, aes(x=Index, y=Value, group = Series, type = Series)) +
+     geom_line(aes(linetype=Series)) + 
+     scale_x_date(limits = as.Date(c(min(cf.ret.cap.q1.long$Index), max(cf.ret.cap.q1.long$Index))),
+               date_labels = "%Y", date_breaks = "3 years") +
+     geom_text(data = label.dat, aes(x = Index, y= Value, label = Series), 
             hjust = 0.1, size=3, color= 'black', parse = TRUE)+
-  geom_hline(yintercept=c(1, 0.5, 0),colour="#990000", linetype="dashed")+
-  ggtitle(title)+
-  #  geom_point(aes(shape=Series))+
-  xlab("year") + ylab("coefficients")
+     geom_hline(yintercept=c(1, 0.5, 0),colour="#990000", linetype="dashed")+
+     ggtitle(title)+
+     #  geom_point(aes(shape=Series))+
+     xlab("year") + ylab("coefficients")
+#
 gg1
+#
 path_gg1 = paste("~/residual_strategy/output/", "cf_ret_cap_q1", sep="")
 ExportPlot(gg1, path_gg1)
 #-------------------------------------------------------------
-#計算Table 1 panel A run rolling regression by eq(15)
+# Table 1 panel A run rolling regression by eq(15)
 # conventional return reversal model based on cap weighting
 #-------------------------------------------------------------
 # create interaction variables with three factors:
@@ -1560,10 +1607,6 @@ est.parm.es.eq.df
 # http://www.tablesgenerator.com/latex_tables
 # we can use latex table generator to generate tables
 
-
-
-
-
 #===============================================================================
 # Blitz Table 4: here we don't need to differentiate captial from equal weighting as
 # we just focus on stocks coefficients not portfolio coefficients
@@ -1610,24 +1653,24 @@ label.dat = fortify(tail(cf.es.qi[[1]][,2:4],1), melt=TRUE)
 title = "Dynamic factor exposures for residual reversal portfolio (Q1)"
 #title = paste(title, 'based on quintiles of residual returns')
 #gp= ggplot(cf.es.pg, aes(x=Index, y=Value, group = Series)) +
-ggplot(cf.es.pg, aes(x=Index, y=Value, group = Series)) +  
-  geom_line(aes(linetype=Series)) +
-  geom_line(data = cf.ret.pg, aes(linetype = Series), color="red")+
-  scale_linetype_manual(values=c("solid", "dotdash",  "longdash"))+
-  #scale_color_manual(values=c( "black", "#666666", "grey","black", "#666666", "grey")+
-  #geom_point(aes(shape=Series))+
-  xlab("") + ylab("Factor exposures")+
-  #scale_x_datetime(breaks = date_breaks("1 year"),labels = date_format("%Y"))+
-  geom_text(data = label.dat, aes(x=Index,y=Value, label = Series), hjust = -0.1)+
-  ggtitle(title) +
-  theme(plot.title=element_text(face="bold", size=12))+
-  theme(legend.position=c(0.8, 0.8))+
-  #theme(legend.position="right")
-  #theme(legend.justification=c(0,0), legend.position=c(0,0.6))+
-  theme(legend.text = element_text(colour="blue", size = 10, face = "bold")) +
-  geom_hline(yintercept=c(0,1),colour="#990000", linetype="solid")
+ggplot(cf.es.pg, aes(x = Index, y = Value, group = Series)) +  
+      geom_line(aes(linetype = Series)) +
+      geom_line(data = cf.ret.pg, aes(linetype = Series), color = "red")+
+      scale_linetype_manual(values=c("solid", "dotdash",  "longdash"))+
+      #scale_color_manual(values=c( "black", "#666666", "grey","black", "#666666", "grey")+
+      #geom_point(aes(shape=Series))+
+      xlab("") + ylab("Factor exposures")+
+      #scale_x_datetime(breaks = date_breaks("1 year"),labels = date_format("%Y"))+
+      geom_text(data = label.dat, aes(x = Index, y = Value, label = Series), hjust = -0.1)+
+      ggtitle(title) +
+      theme(plot.title = element_text(face = "bold", size = 12))+
+      theme(legend.position = c(0.8, 0.8)) +
+      #theme(legend.position="right")
+      #theme(legend.justification=c(0,0), legend.position=c(0,0.6))+
+      theme(legend.text = element_text(colour = "blue", size = 10, face = "bold")) +
+      geom_hline(yintercept = c(0,1), colour = "#990000", linetype = "solid")
 #
-path_gp = paste("~/residual reversal/output/", "10Q_equity", sep="")
+path_gp = paste("~/residual reversal/output/", "10Q_equity", sep= "")
 ExportPlot(gp, path_gp) # run Expo
 #-----------------------------------------------------------------
 # use plotly to plot 
