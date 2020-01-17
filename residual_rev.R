@@ -40,6 +40,7 @@ library(dynlm)
 library(huxtable)
 library(xtable)
 library(ggplot2)
+library(timetk)
 load.packages('scales')
 load.packages('RColorBrewer')
 #jbTest(rnorm(100, mean = 3, sd = 5))
@@ -1626,18 +1627,19 @@ head(es.q1.ret)
 #head(es.q1.ret.factors)
 #write.csv(es.q1.ret.factors, file="D:/亞洲大學碩士班指導論文/雅萍香玫/香玫/es_q1_ret_factors.csv")
 #es.q1 = es.q1.ret.factors[,-3:-4]
-cf.es.qi<-list()
+cf.es.qi <- list()
+cf.ret.qi <- list()
 # i = 1
 for (i in 1:10){
-  temp.ret<-quantiles.tw$last.e_s$models_cap[[i]]$ret 
-  temp.es.qi.ret.factors = merge(temp.ret, data.fa.tw$factors[,-4])
-  temp.es.qi.ret.factors = temp.es.qi.ret.factors["199302/201712"]
+  temp.es.qi.ret.factors <- quantiles.tw$last.e_s$models_cap[[i]]$ret %>% 
+                          merge(., data.fa.tw$factors[, -4]) %>% 
+                          .["199302/201712"]
+  temp.ret.qi.ret.factors <- quantiles.tw$one.month$models_cap[[i]]$ret %>% 
+                          merge(., data.fa.tw$factors[, -4]) %>% 
+                          .["199302/201712"]
   rolling <- function(x) coef(lm(X1101 ~ ., data = as.data.frame(x)))
-  #cf.es.q1 = rollapplyr(es.q1.ret.factors, 36, rolling, by.column = FALSE)
   cf.es.qi[[i]] <- rollapplyr(temp.es.qi.ret.factors, 36, rolling, by.column = FALSE)
-  #cf.es.q10 = rollapplyr(es.q10.ret.factors, 36, rolling, by.column = FALSE)
-  #head(cf.es.qi[[1]],40)
-  #tail(cf.es.qi[[1]])
+  cf.ret.qi[[i]] <- rollapplyr(temp.ret.qi.ret.factors, 36, rolling, by.column = FALSE)
 }  
 
 head(cf.es.qi[[10]], 40)
@@ -1649,29 +1651,29 @@ cf.ret.pg = fortify(na.trim(cf.ret.qi[[1]][,2:4]), melt = TRUE)
 dim(cf.es.pg)
 dim(cf.ret.pg)
 head(cf.es.pg)
-label.dat = fortify(tail(cf.es.qi[[1]][,2:4],1), melt=TRUE)
+label.dat = fortify(tail(cf.es.qi[[1]][,2:4],1), melt = TRUE)
 title = "Dynamic factor exposures for residual reversal portfolio (Q1)"
 #title = paste(title, 'based on quintiles of residual returns')
 #gp= ggplot(cf.es.pg, aes(x=Index, y=Value, group = Series)) +
-ggplot(cf.es.pg, aes(x = Index, y = Value, group = Series)) +  
-      geom_line(aes(linetype = Series)) +
-      geom_line(data = cf.ret.pg, aes(linetype = Series), color = "red")+
-      scale_linetype_manual(values=c("solid", "dotdash",  "longdash"))+
-      #scale_color_manual(values=c( "black", "#666666", "grey","black", "#666666", "grey")+
-      #geom_point(aes(shape=Series))+
-      xlab("") + ylab("Factor exposures")+
-      #scale_x_datetime(breaks = date_breaks("1 year"),labels = date_format("%Y"))+
-      geom_text(data = label.dat, aes(x = Index, y = Value, label = Series), hjust = -0.1)+
-      ggtitle(title) +
-      theme(plot.title = element_text(face = "bold", size = 12))+
-      theme(legend.position = c(0.8, 0.8)) +
-      #theme(legend.position="right")
-      #theme(legend.justification=c(0,0), legend.position=c(0,0.6))+
-      theme(legend.text = element_text(colour = "blue", size = 10, face = "bold")) +
-      geom_hline(yintercept = c(0,1), colour = "#990000", linetype = "solid")
+cf.es.ret.Q1 <- ggplot(cf.es.pg, aes(x = Index, y = Value, group = Series)) +  
+                geom_line(aes(linetype = Series)) +
+                geom_line(data = cf.ret.pg, aes(linetype = Series), color = "red")+
+                scale_linetype_manual(values=c("solid", "dotdash",  "longdash"))+
+                #scale_color_manual(values=c( "black", "#666666", "grey","black", "#666666", "grey")+
+                #geom_point(aes(shape=Series))+
+                xlab("") + ylab("Factor exposures")+
+                #scale_x_datetime(breaks = date_breaks("1 year"),labels = date_format("%Y"))+
+                geom_text(data = label.dat, aes(x = Index, y = Value, label = Series), hjust = -0.1)+
+                ggtitle(title) +
+                theme(plot.title = element_text(face = "bold", size = 12))+
+                theme(legend.position = c(0.8, 0.8)) +
+                #theme(legend.position="right")
+                #theme(legend.justification=c(0,0), legend.position=c(0,0.6))+
+                theme(legend.text = element_text(colour = "blue", size = 10, face = "bold")) +
+                geom_hline(yintercept = c(0,1), colour = "#990000", linetype = "solid")
 #
-path_gp = paste("~/residual reversal/output/", "10Q_equity", sep= "")
-ExportPlot(gp, path_gp) # run Expo
+path_gp = paste("~/residual_strategy/output/", "cf_es_ret_Q1", sep= "")
+ExportPlot(cf.es.ret.Q1, path_gp) # run Expo
 #-----------------------------------------------------------------
 # use plotly to plot 
 #-----------------------------------------------------------------
@@ -1682,12 +1684,17 @@ cf.data<-data.frame(date=index(cf.data), coredata(cf.data))
 cf.data<-na.trim(cf.data)
 colnames(cf.data)<-c("date", "mkp", "SMB", "HML", "mkp.1", "SMB.1", "HML.1")
 #=============================================================================
-p1<-plot_ly(data=cf.data, x=~date, y=~mkp, name='mkp_ret',type = 'scatter', mode='lines') %>%
-  add_trace(y=~mkp.1, name='mkp_res', mode = 'lines+markers')
-p2<-plot_ly(data=cf.data, x=~date, y=~SMB, name='SMB_ret',type = 'scatter', mode='lines') %>%
-  add_trace(y=~SMB.1, name='SMB_res', mode = 'lines+markers')
-p3<-plot_ly(data=cf.data, x=~date, y=~HML, name='HML_ret',type = 'scatter', mode='lines') %>%
-  add_trace(y=~HML.1, name='HML_res', mode = 'lines+markers')
+p1 <- plot_ly(data=cf.data, x=~date, y=~mkp, name='mkp_ret',type = 'scatter', mode='lines') %>%
+      add_trace(y=~mkp.1, name='mkp_res', mode = 'lines+markers')
+p1
+#
+p2 <- plot_ly(data=cf.data, x=~date, y=~SMB, name='SMB_ret',type = 'scatter', mode='lines') %>%
+      add_trace(y=~SMB.1, name='SMB_res', mode = 'lines+markers')
+p2
+#
+p3 <- plot_ly(data=cf.data, x=~date, y=~HML, name='HML_ret',type = 'scatter', mode='lines') %>%
+      add_trace(y=~HML.1, name='HML_res', mode = 'lines+markers')
+p3
 #---------------------------------------------------------------------------------------
 #ggplot(cf.data, aes(x = dens, fill = lines)) + geom_density(alpha = 0.5)
 cf.data.gg<-cbind(cf.ret = cf.ret.qi[[1]][,2:4],
@@ -1703,16 +1710,19 @@ head(cf.data.pg1)
 ggplot(cf.data.pg1, aes(x = Value, fill = Series)) + geom_density(alpha = 0.3)+
   scale_x_continuous(limits =c(0.6, 1.5))
 #
-# SMB vs. SM B.1
+# SMB vs. SMB.1
 cf.data.pg2 = fortify(cf.data.gg[,c(2,5)], melt = TRUE)
 head(cf.data.pg2)
 #------------------------------------------------------
-ggplot(cf.data.pg2, aes(x = Value, fill = Series)) + geom_density(alpha = 0.3)
-#scale_x_continuous(limits =c(0.6, 1.5))
-#
-
-
-
+ggplot(cf.data.pg2, aes(x = Value, fill = Series)) + geom_density(alpha = 0.3) +
+  scale_x_continuous(limits =c(-0.6, 1.5))
+# 
+# HML vs. HML.1
+cf.data.pg3 = fortify(cf.data.gg[,c(3,6)], melt = TRUE)
+head(cf.data.pg3)
+#------------------------------------------------------
+ggplot(cf.data.pg3, aes(x = Value, fill = Series)) + geom_density(alpha = 0.3) +
+  scale_x_continuous(limits =c(-1.0, 1.5))
 
 #-------------------------------------------------------------
 #計算Table 1 panel A run rolling regression by eq(15)
