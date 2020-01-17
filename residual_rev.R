@@ -1695,6 +1695,9 @@ p2
 p3 <- plot_ly(data=cf.data, x=~date, y=~HML, name='HML_ret',type = 'scatter', mode='lines') %>%
       add_trace(y=~HML.1, name='HML_res', mode = 'lines+markers')
 p3
+#
+p123 <- subplot(p1, p2, p3)
+p123
 #---------------------------------------------------------------------------------------
 #ggplot(cf.data, aes(x = dens, fill = lines)) + geom_density(alpha = 0.5)
 cf.data.gg<-cbind(cf.ret = cf.ret.qi[[1]][,2:4],
@@ -1707,22 +1710,23 @@ cf.data.gg<-na.trim(cf.data.gg)
 cf.data.pg1 = fortify(cf.data.gg[,c(1,4)], melt = TRUE)
 head(cf.data.pg1)
 #------------------------------------------------------
-ggplot(cf.data.pg1, aes(x = Value, fill = Series)) + geom_density(alpha = 0.3)+
-  scale_x_continuous(limits =c(0.6, 1.5))
+cf_dist_pg1 <- ggplot(cf.data.pg1, aes(x = Value, fill = Series)) + geom_density(alpha = 0.3)+
+               scale_x_continuous(limits =c(0.6, 1.5))
+
 #
 # SMB vs. SMB.1
 cf.data.pg2 = fortify(cf.data.gg[,c(2,5)], melt = TRUE)
 head(cf.data.pg2)
 #------------------------------------------------------
-ggplot(cf.data.pg2, aes(x = Value, fill = Series)) + geom_density(alpha = 0.3) +
-  scale_x_continuous(limits =c(-0.6, 1.5))
+cf_dist_pg2 <- ggplot(cf.data.pg2, aes(x = Value, fill = Series)) + geom_density(alpha = 0.3) +
+               scale_x_continuous(limits =c(-0.6, 1.5))
 # 
 # HML vs. HML.1
 cf.data.pg3 = fortify(cf.data.gg[,c(3,6)], melt = TRUE)
 head(cf.data.pg3)
 #------------------------------------------------------
-ggplot(cf.data.pg3, aes(x = Value, fill = Series)) + geom_density(alpha = 0.3) +
-  scale_x_continuous(limits =c(-1.0, 1.5))
+cf_dist_pg3 <- ggplot(cf.data.pg3, aes(x = Value, fill = Series)) + geom_density(alpha = 0.3) +
+               scale_x_continuous(limits =c(-1.0, 1.5))
 
 #-------------------------------------------------------------
 #計算Table 1 panel A run rolling regression by eq(15)
