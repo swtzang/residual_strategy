@@ -281,7 +281,7 @@ data.tw$weight[1:36,] = NA
 #write.csv(data.tw$weight, file="D:/亞洲大學碩士班指導論文/雅萍香玫/香玫/equal_weights.csv")
 #write.csv(ret.tw, file="D:/亞洲大學碩士班指導論文/雅萍香玫/香玫/ret_tw.csv")
 #head(models.tw$weight[,1],40)
-last <- xts::last
+# last <- xts::last
 models.tw$equal.weight = bt.run(data.tw)
 #sum(models.tw$weight[100,],na.rm=TRUE)
 names(models.tw$equal.weight)
